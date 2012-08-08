@@ -6,9 +6,14 @@
 var express = require('express')
   , routes = require('./routes')
   , http = require('http')
-  , path = require('path');
+  , path = require('path')
+  , _ = require('underscore')
+  requirejs = require('requirejs');
 
-var app = express();
+var app = express()
+    , server = http.createServer(app)
+    , io = require('socket.io').listen(server);
+io.set('log level', 1);
 
 app.configure(function(){
   app.set('port', process.env.PORT || 80);
@@ -29,7 +34,93 @@ app.configure('development', function(){
 });
 
 app.get('/', routes.index);
+app.get('/death', routes.death);
 
-http.createServer(app).listen(app.get('port'), function(){
+server.listen(app.get('port'), function(){
   console.log("Express server listening on port " + app.get('port'));
 });
+
+requirejs.config({
+    //Pass the top-level main.js/index.js require
+    //function to requirejs so that node modules
+    //are loaded relative to the top-level JS file.
+    nodeRequire: require
+});
+
+requirejs(['public/scripts/vector', 'public/scripts/constants'],
+function(vector, C) {
+
+    object_counter = 0;
+    objects = new Array();
+
+    function get_object(id){
+        return _(objects).find(function(object){
+            return object.id === id;
+        });
+    }
+
+    function Human(socket) {
+        this.type = TYPE_HUMAN;
+        this.socket = socket;
+        this.id = object_counter++;
+    }
+
+    Human.prototype.data = function() {
+        return {type: this.type, loc: this.loc, id: this.id};
+    }
+
+    io.sockets.on('connection', function(socket){
+        var object = new Human(socket);
+        objects.push(object);
+        socket.set('object', object);
+        
+        object.loc = { lat: 60.169864, lng: 24.938268 };
+        
+        
+        socket.set('id', object_counter++);
+        socket.emit('spawn_player', object.data());
+        
+        _(objects).each(function(o){
+            socket.emit('spawn', o.data());
+        });
+
+        socket.broadcast.emit('spawn', object.data());
+
+        socket.on('angle', function(angle){
+            object.angle = angle;
+        });
+
+        socket.on('shoot', function(shooting){
+            
+        });
+
+        socket.on('terrain', function(data){
+
+        });
+       
+        socket.on('move', function(data){
+            object.move = vector(data.x, data.y).unit();
+        });
+
+        socket.on('disconnect', function(){
+            socket.broadcast.emit('remove', object.id);
+            objects = _(objects).without(object);
+        });
+    });
+
+    function update() {
+        var location_table = new Array();
+        _(objects).each(function(object){
+            location_table.push({id: object.id, loc: object.loc});
+        });
+        _.each(_(objects).filter(function(object){
+            return object.type === TYPE_HUMAN;
+        }), function(human){
+            human.socket.emit('update', location_table);
+        });
+        setTimeout(update, 100);
+    }
+
+    setTimeout(update, 100);
+});
+
