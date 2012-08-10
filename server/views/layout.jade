@@ -1,0 +1,28 @@
+doctype 5
+html
+  head
+    meta(name='vieport', content='initial-scale=1.0, user-scalable=no')
+    title= title
+    link(rel='stylesheet', href='/stylesheets/style.css')
+    script(src='http://maps.googleapis.com/maps/api/js?key=AIzaSyB9Stvt5r1OkWMx4W7-t2zx_BBWqS9Ivh0&sensor=false')
+    script(src="/socket.io/socket.io.js")
+    script(type='text/javascript')
+      dojoConfig = {
+        async: 1,
+        baseUrl: '../',
+        tlmSiblingOfDojo: 0,
+        packages: [
+            { name: "dojo", location: "dojo" },
+            { name: "shooter", location: "shooter"}
+          ]
+      };
+
+    script(src="dojo/dojo.js")
+    script(type='text/javascript')
+      require(["shooter/main"], function(){
+
+      });
+    //script(data-main="scripts/main", src="scripts/require-jquery.js")
+    //script(src="scripts/main-built.js")
+  body
+    block content

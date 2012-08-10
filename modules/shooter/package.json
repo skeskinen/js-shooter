@@ -1,0 +1,6 @@
+{
+  "name": "shooter",
+  "version": "0.0.1",
+  "private": true,
+  "dojoBuild": "shooter.profile.js"
+}

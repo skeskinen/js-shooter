@@ -8,7 +8,8 @@ var express = require('express')
   , http = require('http')
   , path = require('path')
   , _ = require('underscore')
-  requirejs = require('requirejs');
+  ,requirejs = require('requirejs')
+  ,fs = require('fs');
 
 var app = express()
     , server = http.createServer(app)
@@ -26,7 +27,9 @@ app.configure(function(){
   app.use(express.cookieParser('your secret here'));
   app.use(express.session());
   app.use(app.router);
-  app.use(express.static(path.join(__dirname, 'public')));
+  app.use(express.compress());
+  app.use(express.static(path.join(__dirname, '../public')));
+  app.use(express.static(path.join(__dirname, '../modules')));
 });
 
 app.configure('development', function(){
@@ -44,13 +47,15 @@ requirejs.config({
     //Pass the top-level main.js/index.js require
     //function to requirejs so that node modules
     //are loaded relative to the top-level JS file.
+    baseUrl: path.join(__dirname, '../modules'),
+
     nodeRequire: require
 });
 
-requirejs(['public/scripts/vector', 'public/scripts/constants'],
+requirejs(['shooter/vector', 'shooter/constants'],
 function(vector, C) {
 
-    object_counter = 0;
+    object_counter = 1;
     objects = new Array();
 
     function get_object(id){
@@ -60,7 +65,7 @@ function(vector, C) {
     }
 
     function Human(socket) {
-        this.type = TYPE_HUMAN;
+        this.type = C.TYPE_HUMAN;
         this.socket = socket;
         this.id = object_counter++;
     }
@@ -98,8 +103,8 @@ function(vector, C) {
 
         });
        
-        socket.on('move', function(data){
-            object.move = vector(data.x, data.y).unit();
+        socket.on('move_dir', function(data){
+            object.move_dir = vector(data.x, data.y).unit();
         });
 
         socket.on('disconnect', function(){
@@ -114,7 +119,7 @@ function(vector, C) {
             location_table.push({id: object.id, loc: object.loc});
         });
         _.each(_(objects).filter(function(object){
-            return object.type === TYPE_HUMAN;
+            return object.type === C.TYPE_HUMAN;
         }), function(human){
             human.socket.emit('update', location_table);
         });
