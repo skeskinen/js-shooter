@@ -1,4 +1,5 @@
-define(["shooter/networking", "shooter/maps", "shooter/game"], function(networking, maps, game){
+define(["shooter/networking", "shooter/maps", "shooter/game", "shooter/events"], function(networking, maps, game, events){
+    events.bind();
 
     networking.connect();
     

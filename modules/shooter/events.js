@@ -1,4 +1,4 @@
-define(["shooter/networking", "shooter/maps"], function(networking, maps){
+define(["shooter/networking", "shooter/vector", "shooter/maps", "dojo/dom", "dojo/on", "dojo/keys", "dojo/domReady!"], function(networking, vector, maps, dom, on, keys){
     var is_down = new Array();
     function get_mouse_angle(){
         var center = vector(map_w/2,map_h/2);
@@ -21,7 +21,7 @@ define(["shooter/networking", "shooter/maps"], function(networking, maps){
         if(is_down['d']) {
             x +=1;
         }
-        if(is_down['w') {
+        if(is_down['w']) {
             y +=1;
         }
         if(is_down['s']){
@@ -33,64 +33,63 @@ define(["shooter/networking", "shooter/maps"], function(networking, maps){
 
     return {
         bind: function(){
-            $(function(){
-                initialize();
-                socket();
-
-                $(document).keydown(function(event){
+                on(window, "keydown", function(event){
+                    console.log(event, keys);
                     switch(event.which){
                         case 65:
                             is_down['a'] = true;
-                            networking.send_move();
+                            networking.send_move(get_move());
                             break;
                         case 87:
 
                         case 188:
                             is_down['w'] = true;
-                            networking.send_move();
+                            networking.send_move(get_move());
                             break;
+
                         case 68:
 
                         case 69:
                             is_down['d'] = true;
-                            networking.send_move();
+                            networking.send_move(get_move());
                             break;
+
                         case 83:
 
                         case 79:
                             is_down['s'] = true;
-                            networking.send_move();
+                            networking.send_move(get_move());
                             break;
                     }
                 });
 
-                $(document).keyup(function(event){
+                on(document, "keyup", function(event){
                     switch(event.which){
                         case 65:
                             is_down['a'] = false;
-                            networking.send_move();
+                            networking.send_move(get_move());
                             break;
                         case 87:
 
                         case 188:
                             is_down['w'] = false;
-                            networking.send_move();
+                            networking.send_move(get_move());
                             break;
                         case 68:
 
                         case 69:
                             is_down['d'] = false;
-                            networking.send_move();
+                            networking.send_move(get_move());
                             break;
                         case 83:
 
                         case 79:
                             is_down['s'] = false;
-                            networking.send_move();
+                            networking.send_move(get_move());
                             break;
                     }
                 });
-
+/*
                 $(document).mousedown(function(event){
                     is_down['mouse'] = true;
                     mouse_x = event.pageX;
@@ -106,7 +105,7 @@ define(["shooter/networking", "shooter/maps"], function(networking, maps){
                 });
 
                 maps.bind_mouse_listener();
-
+*/
                 /*
                 $(window).resize(function(){
                 var d_x = $('#map_canvas').width() - map_w;
@@ -120,7 +119,6 @@ define(["shooter/networking", "shooter/maps"], function(networking, maps){
                 player.draw();
                 });
                 */
-            });
         }
     }
 });

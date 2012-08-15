@@ -1,12 +1,23 @@
 define(["shooter/maps", "shooter/vector"], function(maps, vector) {
+    var socket;
     return {
         connect: function(){
             socket = io.connect();
-            socket.on('spawn_player', function(data){
-                //        var latlng = rad;
-//                var loc = Coord(data.loc.lat, data.loc.lng);
-            //    maps.set_center(loc);
+            
+            socket.on('ready', function(){
+            socket.emit('auth', {guest:true});
+            var tmp_start_pos = vector({x: 145.73387946666668, y: 74.09939904641982});
+            socket.emit('spawn', tmp_start_pos);
+            
             });
+
+            socket.on('events', function(data){
+                console.log(data); 
+            });
+        },
+        send_move: function(move){
+            console.log('send');
+            socket.emit('event', move);
         }
         /*
         socket.on('spawn', function(data){

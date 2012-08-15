@@ -2,6 +2,7 @@ define(["shooter/object", "shooter/constants"], function(Object, C){
     function Objects(){
         this.index = {}
         this.root = {s:0, level:0, x_min:0, x_mid:C.WORLD_SIZE/2, x_max:C.WORLD_SIZE, y_min:0, y_mid: C.WORLD_SIZE/2, y_max:C.WORLD_SIZE, childs:false, leaf_array:[]}
+        this.index_counter = 0;
     }
 
     function split(node){
@@ -100,5 +101,10 @@ define(["shooter/object", "shooter/constants"], function(Object, C){
         return this.index[id];
     }
 
+    Objects.prototype.next_id = function(){
+        return ++this.index_counter;
+    }
+
     return Objects;
 });
+
