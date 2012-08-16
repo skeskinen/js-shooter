@@ -7,8 +7,7 @@ define(["shooter/constants", "shooter/vector"], function(C, vector){
         }
         this.pos = this.pos || vector();
         this.type = this.type || C.TYPE_NO_TYPE;
-        this.id = this.id || 0;
-        this.move_dir = this.move_dir || vector();
+        this.move = this.move || vector();
     };
 
     Object.prototype.toJSON = function(){

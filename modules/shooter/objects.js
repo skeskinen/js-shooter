@@ -1,11 +1,8 @@
-define(["shooter/object", "shooter/constants"], function(Object, C){
-    function Objects(){
-        this.index = {}
-        this.root = {s:0, level:0, x_min:0, x_mid:C.WORLD_SIZE/2, x_max:C.WORLD_SIZE, y_min:0, y_mid: C.WORLD_SIZE/2, y_max:C.WORLD_SIZE, childs:false, leaf_array:[]}
-        this.index_counter = 0;
-    }
+define(["shooter/object", "shooter/constants", "shooter/utils"], function(object, C, utils){
+    index = {}
+    root = {s:0, level:0, x_min:0, x_mid:C.WORLD_SIZE/2, x_max:C.WORLD_SIZE, y_min:0, y_mid: C.WORLD_SIZE/2, y_max:C.WORLD_SIZE, childs:false, leaf_array:[]}
 
-    function split(node){
+    function _split(node){
         node.childs = true;
         var child_array = node.child_array = [];
         
@@ -45,29 +42,30 @@ define(["shooter/object", "shooter/constants"], function(Object, C){
         }
         delete node.leaf_array;
     }
+    
+    function add(o){
+        o = object(o);
+        index[o.id] = o;
 
-    Objects.prototype.add = function(o){
-        if(!this.index[o.id]){
-            this.index[o.id] = o;
-            var node = this.root;
-            var pos = o.pos;
-            while(node.childs){
-                ++node.s
-                node = node.child_array[0+(pos.x>node.x_mid?1:0)+(pos.y>node.y_mid?2:0)];
-            }
+        var node = root;
+        var pos = o.pos;
+        while(node.childs){
             ++node.s
-            node.leaf_array.push(o);
-            if(node.s > C.QUADTREE_NODE_LIMIT && node.level <= C.QUADTREE_LEVEL_LIMIT){
-                split(node);
-            }
+            node = node.child_array[0+(pos.x>node.x_mid?1:0)+(pos.y>node.y_mid?2:0)];
         }
+        ++node.s
+        node.leaf_array.push(o);
+        if(node.s > C.QUADTREE_NODE_LIMIT && node.level <= C.QUADTREE_LEVEL_LIMIT){
+            _split(node);
+        }
+        return o;
     }
     
-    Objects.prototype.remove = function(id){
-        var o = this.index[id]
+    function remove(id){
+        var o = index[id]
         if (o){
-            delete this.index[id];
-            var node = this.root;
+            delete index[id];
+            var node = root;
             var pos = o.pos;
             while(node.childs){
                 --node.s
@@ -97,14 +95,41 @@ define(["shooter/object", "shooter/constants"], function(Object, C){
         }
     }
 
-    Objects.prototype.get = function(id){
-        return this.index[id];
+    function get(id){
+        return index[id];
     }
 
-    Objects.prototype.next_id = function(){
-        return ++this.index_counter;
+    var overlap = utils.overlap;
+
+    function _get_objects(node, area, f){
+        if (overlap(area, {x1: node.x_min, y1: node.y_min, x2: node.x_max, y2: node.y_max})){
+            if (node.childs){
+                for(var i=0; i<4; i++){
+                    get_objects(node.child_array[i], area, f);
+                }
+            }else{
+                var leaf_array = node.leaf_array
+                for(var i=0, len = leaf_array.length; i<len; ++i){
+                    var x1 = area.x1, y1 = area.y1, x2 = area.x2, y2 = area.y2;
+                    var object = leaf_array[i];
+                    var pos = object.pos;
+                    if(pos.x >= x1 && pos.x <= x2 && pos.y >= y1 && pos.y <= y2){
+                        f(object)
+                    }
+                }
+            }
+        }
+    }
+    
+    function area_get(area, f){
+        _get_objects(root, area, f);
     }
 
-    return Objects;
+    return {
+        add: add,
+        remove: remove,
+        get: get,
+        area_get: area_get,
+    };
 });
 

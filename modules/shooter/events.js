@@ -1,5 +1,13 @@
 define(["shooter/networking", "shooter/vector", "shooter/maps", "dojo/dom", "dojo/on", "dojo/keys", "dojo/domReady!"], function(networking, vector, maps, dom, on, keys){
     var is_down = new Array();
+
+    var draw_canvas = dom.byId('draw_canvas');
+    function resize_draw_canvas(){
+        draw_canvas.width = draw_canvas.offsetWidth;
+        draw_canvas.height = draw_canvas.offsetHeight;
+    }
+    resize_draw_canvas();
+
     function get_mouse_angle(){
         var center = vector(map_w/2,map_h/2);
         var mouse_pos = vector(mouse_x, mouse_y);
@@ -27,14 +35,12 @@ define(["shooter/networking", "shooter/vector", "shooter/maps", "dojo/dom", "doj
         if(is_down['s']){
             y -=1;
         }
-
-        return vector(x,y);
+        return vector({x:x,y:y});
     }
 
     return {
         bind: function(){
                 on(window, "keydown", function(event){
-                    console.log(event, keys);
                     switch(event.which){
                         case 65:
                             is_down['a'] = true;
@@ -89,6 +95,9 @@ define(["shooter/networking", "shooter/vector", "shooter/maps", "dojo/dom", "doj
                             break;
                     }
                 });
+                on(window, "resize", function(){
+                    resize_draw_canvas();
+                });
 /*
                 $(document).mousedown(function(event){
                     is_down['mouse'] = true;
@@ -107,13 +116,6 @@ define(["shooter/networking", "shooter/vector", "shooter/maps", "dojo/dom", "doj
                 maps.bind_mouse_listener();
 */
                 /*
-                $(window).resize(function(){
-                var d_x = $('#map_canvas').width() - map_w;
-                var d_y = $('#map_canvas').height() - map_h;
-                map_w = $('#map_canvas').width();
-                map_h = $('#map_canvas').height();
-
-                map.panBy(-d_x/2, -d_y/2);
 
                 player.recalc_pixels_ = true;
                 player.draw();

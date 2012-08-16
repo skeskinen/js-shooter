@@ -1,59 +1,39 @@
-define(["shooter/maps", "shooter/vector"], function(maps, vector) {
+define(["shooter/maps", "shooter/vector", "shooter/utils", "shooter/game", "shooter/constants"], function(maps, vector, utils, game, C) {
     var socket;
     return {
         connect: function(){
             socket = io.connect();
-            
-            socket.on('ready', function(){
-            socket.emit('auth', {guest:true});
-            var tmp_start_pos = vector({x: 145.73387946666668, y: 74.09939904641982});
-            socket.emit('spawn', tmp_start_pos);
-            
+            var first_time_diff;
+            function time_request(){
+                socket.emit('time', {c_time:new Date().getTime()});
+            }
+            socket.on('connect', function(){
+                
+                for(var i = 0; i<20; i++){
+                    setTimeout(time_request, i*5000);
+                }
+                socket.emit('auth', {guest:true});
+                var tmp_start_pos = vector({x: 145.73387946666668, y: 74.09939904641982});
+                socket.emit('spawn', tmp_start_pos);
+            });
+
+            socket.on('time', function(data){
+                utils.new_time_result(data);
             });
 
             socket.on('events', function(data){
-                console.log(data); 
+                for(var i=0, len = data.length; i < len; ++i){
+                    game.add_event(data[i]);
+                }
+            });
+
+            socket.on('player', function(id){
+               game.player_id = id; 
             });
         },
         send_move: function(move){
-            console.log('send');
-            socket.emit('event', move);
+            socket.emit('move', {time: utils.time() + C.EVENT_DELAY, move:move});
         }
-        /*
-        socket.on('spawn', function(data){
-        spawn(data);
-        });
-
-        socket.on('remove', function(id){
-        remove(id);
-        });
-
-        socket.on('update', function(data){
-        _(data).each(function(object){
-        var o = get_object(object.id);
-        o.location_ = new google.maps.LatLng(object.loc.lat, object.loc.lng);
-        });
-        map.setCenter(player.location_);
-        hidden_map.setCenter(player.location_);
-        });
-
-        socket.on('shot', function(data){
-        var shooter = get_object(data.shooter);
-        if (shooter !== undefined){
-        spawn_bullet(shooter.location_, data.angle);
-        }
-        });
-
-        },
-
-        send_mouse: function(loc, angle){
-        socket.emit('angle', {loc: loc, angle: angle});
-        },
-
-        send_move_dir:function(dir){
-        socket.emit('move_dir', dir);
-        }
-        */
     }
 });
 

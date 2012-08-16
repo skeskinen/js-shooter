@@ -1,8 +1,14 @@
-define(["shooter/networking", "shooter/maps", "shooter/game", "shooter/events"], function(networking, maps, game, events){
+define(["shooter/networking", "shooter/drawing", "shooter/maps", "shooter/game", "shooter/events"], function(networking, drawing, maps, game, events){
     events.bind();
 
     networking.connect();
-    
+ 
+    function draw(){
+        drawing.render();
+        setTimeout(draw, 50);
+    }
+    draw();
+
   //  events.bind();
 
 //    projectiles.generate();

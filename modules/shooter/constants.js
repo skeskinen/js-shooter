@@ -21,7 +21,12 @@ define(function(){
         QUADTREE_NODE_LIMIT: 20,
         QUADTREE_LEVEL_LIMIT: 18,
 
-        EVENT_DELAY: 80
+        EVENT_DELAY: 100,
+        EVENT_DELAY_LOW_LIMIT: 30,
+
+        EVENT_SPAWN: 1,
+        EVENT_MOVE: 2
+
     }
 });
 

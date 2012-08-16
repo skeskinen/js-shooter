@@ -1,4 +1,4 @@
-define(["shooter/constants", "shooter/vector", "server/listener", "shooter/underscore"], function(C, vector, Listener, _) {
+define(["shooter/constants", "shooter/vector", "server/listener", "dojo/_base/array"], function(C, vector, Listener, arrayUtil) {
     var index_counter = 0;
     var listeners = [];
     var events = [];
@@ -81,7 +81,7 @@ define(["shooter/constants", "shooter/vector", "server/listener", "shooter/under
                         event_tile.events = [];
                         event_tile.update_time = new Date().getTime();
                     }
-                    event_tile.events.push(e);
+                    event_tile.events.push(e.data);
                 }
             }
         },
@@ -112,7 +112,9 @@ define(["shooter/constants", "shooter/vector", "server/listener", "shooter/under
             }
         },
         remove_listener: function(listener){
-            listeners = _(listeners).without(listener);
+            listeners = arrayUtil.filter(listeners, function(v){
+                return v !== listener;
+            });
         }
     }
 });
