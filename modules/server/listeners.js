@@ -1,121 +1,142 @@
-define(["shooter/constants", "shooter/vector", "server/listener", "dojo/_base/array"], function(C, vector, Listener, arrayUtil) {
-    var index_counter = 0;
-    var listeners = [];
-    var events = [];
-    var total_parts = 1000;
-    var part_size = 1000;
-    var total_size = total_parts * part_size;
-    var tile_size = C.WORLD_SIZE * (2 / total_size);
+/*
+ *  Container class for all listeners. Used to determine who wants to hear which event.
+ *  Works like quadtree until deepest level. Deepest level is 4x4 instead of 2x2 and nodes overlap.
+ */
 
-    var last_process = 0;
-
-    for(var i=0; i<total_parts; ++i){
-        events.push(Array(total_parts));
-    }
-
-    function closest_tile(pos){
-        var x2 = pos.x / tile_size * 2;
-        var x1 = Math.floor(x2/part_size);
-        x2 = Math.floor(x2%part_size);
-        var y2 = pos.y / tile_size * 2;
-        var y1 = Math.floor(y2/part_size);
-        y2 = Math.floor(y2%part_size);
-        return {x1: x1, x2: x2, y1: y1, y2: y2};
-    }
-    function lower_bound(pos){
-        var x2 = (pos.x - 0.25 * tile_size) / tile_size * 2 - 0.25 * tile_size;
-        var x1 = Math.floor(x2/part_size);
-        x2 = Math.floor(x2%part_size);
-        var y2 = (pos.y - 0.25 * tile_size) / tile_size * 2;
-        var y1 = Math.floor(y2/part_size);
-        y2 = Math.floor(y2%part_size);
-        return {x1: x1, x2: x2, y1: y1, y2: y2};
-    }
-    function ensure(x1, y1, x2, y2){
-    var table = events[x1];
-        if(typeof table[y1] !== 'object'){
-            table[y1] = new Array(part_size);
+define(["shooter/constants", "shooter/vector", "dojo/_base/array", "shooter/utils"], function(C, vector, arrayUtil, utils) {
+    /*
+     *  Create new tree node.
+     *  Because of overlapping deepest level, have to add (size at deepest level /4) 
+     *  to every area before that. 
+     */
+    function Node(x, y, s, level){
+        this.x = x;
+        this.y = y;
+        this.s = s;
+        this.level = level;
+        this.area = [x, y, x+s, y+s];
+        if(level < C.LISTENERS_LEVEL_LIMIT){
+            this.area[2] += C.LISTENERS_TILE_SIZE/4;
+            this.area[3] += C.LISTENERS_TILE_SIZE/4;
         }
-        table = table[y1];
-        if(typeof table[x2] !== 'object'){
-            table[x2] = new Array(part_size);
-        }
-        table = table[x2];
-        if(typeof table[y2] !== 'object'){
-            table[y2] = {}
-        }
-        return table[y2];
+        this.is_splitted = false;
+        this.array = [];
     }
 
-    function exists(x1, y1, x2, y2){
-        var table = events[x1][y1];
-        if(typeof table === 'object'){
-            table = table[x2]
-            if(typeof table === 'object'){
-                return table[y2];
+    /*
+     *  Split the node. 2x2 grid until deepest level.
+     *  4x4 at the bottom. Size stays previous level /2 but 
+     *  coordinates are previous level /4 so nodes overlap.
+     */
+
+    Node.prototype.split = function(){
+        this.is_splited = true;
+        var x = this.x, y = this.y, s = this.s, level = this.level;
+        
+        var grid_s = 2;
+        if(level === C_LISTENERS_LEVEL_LIMIT-1){
+            grid_s = 4;
+        }
+        for(var x_i = 0; x_i<grid_s; ++x_i){
+            for(var y_i = 0; y_i<grid_s; ++y_i){
+                array.push(new Node(x+s-s*(grid_s-x_i)/grid_s, y+s-s*(grid_s-y_i)/grid_s, s/2, level+1));
             }
         }
-        return undefined;
     }
 
-    function tile_to_pos(x1, y1, x2, y2){
-        return vector({x: (x1*part_size+x2)*tile_size, y:(y1*part_size+y2)*tile_size});
+    /*
+     *  Gets listeners at event pos and send event to those. 
+     *  This doesn't have to split. If there is no split then there is no listeners in area.
+     */
+
+    Node.prototype.send_event = function(e){
+        if (utils.inside(this.area, e.pos)){
+            if(this.level == C.LISTENERS_LEVEL_LIMIT){
+                var array = this.array;
+                for(var i=0, len = array.length; i<len; i++){
+                    array[i].send_event(e);
+                }
+            }else{
+                if(this.split){
+                    var array = this.array;
+                    for(var i=0, len = array.length; i<len; ++i){
+                        array[i].socket.send_event(e);
+                    }
+                }
+            }
+        }
+    }
+
+    /*
+     *  Gets the closest tile to pos at the deepest level. 
+     *  Splits if have to.
+     */
+
+    Node.prototype.closest_tile(pos){
+        if (this.level === C.LISTENERS_LEVEL_LIMIT){
+            var x = this.x, y = this.y, s = this.s;
+            var area = [x+s/4, y+s/4, x+s/4*3, y+s/4*3];
+            if(utils.inside(area, pos)){
+                return this;
+            }else{
+                return false;
+            }
+        } else if (utils.inside(this.area, pos)){
+            if(!this.is_splitted){
+                this.split()
+            }
+            var array = this.array;
+            for(var i=0, len = array.length; i<len; ++i){
+                var ret = array[i].closest_tile(pos);
+                if(ret){
+                    return ret;
+                }
+            }
+        }
+        return false;
+    }
+
+    var root = new Node(0,0, C.WORLD_SIZE, 0);
+    
+    var tile_size = C.LISTENERS_TILE_SIZE;
+
+    /*
+     *  Send event to correct listeners.
+     *  Forwards event to root node.
+     */
+
+    function send_event(e){
+        root.send_event(e);
+    }
+
+    /*
+     *  Get best maching tile for listener and add listener to that tile.
+     *  Set listener tile area so that listener knows when it should switch to next tile.
+     */
+
+    function add_listener(listener){
+        var tile = root.closest_tile(listener.pos);
+        tile.array.push(listener);
+
+        var x = tile.x, y = tile.y, s = tile.s;
+        var area = [Math.floor(x+s/5), Math.floor(y+s/5), Math.floor(x+s/5*4), Math.floor(y+s/5*4)];
+        listener.tile_area = area;
+    }
+
+    /*
+     *  Get best matching tile for listener and remove listener from that tile.
+     *  Note that you can't update listener position before this has been called.
+     */
+
+    function remove_listener(listener){
+        var tile = root.closest_tile(listener.pos);
+        tile.array = utils.without(tile.array, listener);
     }
 
     return {
-        add_event: function(e){
-            var bound = lower_bound(e.pos);
-            for(var x=0; x<2; ++x){
-                for(var y=0; y<2; ++y){
-                    var x1 = bound.x1, y1= bound.y1, x2=bound.x2+x,y2=bound.y2 +y;
-                    if (x2 >= part_size){
-                        ++x1;
-                        x2 -= part_size;
-                    }
-                    if (y2 >= part_size){
-                        ++y1;
-                        y2-= part_size;
-                    }
-                    event_tile = ensure(x1, y1, x2, y2);
-                    if(!event_tile.update_time || event_tile.update_time < last_process){
-                        event_tile.events = [];
-                        event_tile.update_time = new Date().getTime();
-                    }
-                    event_tile.events.push(e.data);
-                }
-            }
-        },
-        process_events: function(){
-            for(var i=0, len = listeners.length; i<len; ++i){
-                var listener = listeners[i];
-                var tile = listener.tile;
-
-                var event_tile = exists(tile.x1,tile.y1,tile.x2,tile.y2);
-                if(event_tile && event_tile.update_time >= last_process){
-                    listener.socket.emit('events', event_tile.events);
-                }
-            }
-            last_process = new Date().getTime();
-        },
-        add_listener: function(o){
-            var listener = {pos: o.pos, socket: o.socket};
-            listener.id = ++index_counter;
-            listener.tile = closest_tile(listener.pos);
-            listeners.push(listener);
-            return listener;
-        },
-        move_listener: function(listener, pos){
-            listener.pos = pos;
-            var old_d = tile_to_pos(listener.tile).sub(pos);
-            if(Math.abs(old_d.x) > tile_size *0.25 || Math.abs(old_d.y) > tile_size * 0.25){
-                listener.tile = closest_tile(pos);
-            }
-        },
-        remove_listener: function(listener){
-            listeners = arrayUtil.filter(listeners, function(v){
-                return v !== listener;
-            });
-        }
+        send_event: add_event,
+        add_listener: add_listener,
+        remove_listener: remove_listener
     }
 });
 

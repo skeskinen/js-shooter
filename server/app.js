@@ -49,20 +49,12 @@ requirejs.config({
     nodeRequire: require
 });
 
-requirejs(['shooter/vector', 'shooter/constants', 'shooter/object', 'shooter/game', 'server/networking', 'server/listeners', 'server/users'],
-function(vector, C, object, game, networking, listeners, users) {
-    networking.listen(io);
+requirejs(['server/user'],
+function(User) {
 
-    function process_events(){
-        listeners.process_events();
-        setTimeout(process_events, 40);
-    }
-    process_events();
+    io.sockets.on('connection', function(socket){
+        var user = new User(socket);
+    });
 
-    function update_player_listeners(){
-        users.update_listeners()
-        setTimeout(update_player_listeners, 2000);
-    }
-    update_player_listeners();
 });
 

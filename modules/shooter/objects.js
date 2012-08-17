@@ -55,7 +55,7 @@ define(["shooter/object", "shooter/constants", "shooter/utils"], function(object
         }
         ++node.s
         node.leaf_array.push(o);
-        if(node.s > C.QUADTREE_NODE_LIMIT && node.level <= C.QUADTREE_LEVEL_LIMIT){
+        if(node.s > C.OBJECTS_LEAF_LIMIT && node.level <= C.OBJECTS_LEVEL_LIMIT){
             _split(node);
         }
         return o;
@@ -79,7 +79,7 @@ define(["shooter/object", "shooter/constants", "shooter/utils"], function(object
                     break;
                 }
             }
-            while(node.parent && node.parent.s <= C.QUADTREE_NODE_LIMIT){
+            while(node.parent && node.parent.s <= C.OBJECTS_LEAF_LIMIT){
                 node = node.parent;
                 var leaf_array = node.leaf_array = [];
                 var child_array = node.child_array;
