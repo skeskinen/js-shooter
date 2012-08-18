@@ -29,7 +29,7 @@ define(function(){
         EARTH_RADIUS: 6378.137,
 
         //objects containing quadtree constants
-        OBJECTS_LEAF_LIMIT: 20,
+        OBJECTS_LEAF_LIMIT: 32,
         OBJECTS_LEVEL_LIMIT: 18,
 
         //listeners containing quadtree constants
@@ -43,7 +43,13 @@ define(function(){
 
         //event types
         EVENT_SPAWN: 1,
-        EVENT_MOVE: 2
+        EVENT_MOVE: 2,
+
+        //object roles
+        ROLE_MOVE: 0,
+        ROLE_DRAW: 1,
+        //max is always last role +1
+        ROLE_MAX: 2
 
     }
 });

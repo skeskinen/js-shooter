@@ -49,7 +49,12 @@ requirejs.config({
     nodeRequire: require
 });
 
-requirejs(['server/user'],
+/*
+//optional dojo loading
+dojoConfig = {packages:[{name:'modules', location: '../', main:'../../server/main'}]};
+require('../modules/dojo/dojo');
+*/
+requirejs(["server/user"],
 function(User) {
 
     io.sockets.on('connection', function(socket){

@@ -70,7 +70,7 @@ define(["dojo/_base/array"], function(arrayUtil){
     *  estimate of server-client time offset.
     */
 
-    new_time_result: function(data){
+    function new_time_result(data){
         var latency = (new Date().getTime() - data.c_time) / 2;
         var offset = data.s_time - new Date().getTime();
         time_results.push({latency: latency, offset: offset});
@@ -146,6 +146,7 @@ define(["dojo/_base/array"], function(arrayUtil){
         time: time,
         new_time_result: new_time_result,
         overlap: overlap,
+        inside: inside,
         enchant: enchant,
         without: without,
         without_i: without_i

@@ -3,7 +3,7 @@
  *
  */
 
-define(["dojo/_base/lang", "shooter/constants", "server/event"], function(lang, C, Event){
+define(["shooter/constants", "shooter/vector", "shooter/objects", "server/event", "server/listener"], function(C, vector, objects, Event, Listener){
     var guest_id = 0;
 
     var User = function(socket){
@@ -21,16 +21,17 @@ define(["dojo/_base/lang", "shooter/constants", "server/event"], function(lang, 
      *  Runned once immidiately after connection is formed.
      */
 
-    User.prototype.bind_socket(){
+    User.prototype.bind_socket = function(){
+        var socket = this.socket;
         socket.send_event = function(e){
             socket.emit('event', e.data);
         }
 
-        lang.hitch(this, this.time_request);
-        socket.on('time', this.time_request);
+        socket.on('time', this.time_request.bind(this));
 
-        lang.hitch(this, this.spawn);
-        socket.on('spawn', this.spawn);
+        socket.on('spawn', this.spawn.bind(this));
+
+        socket.on('move', this.move.bind(this));
     }
 
     /*  
@@ -39,10 +40,11 @@ define(["dojo/_base/lang", "shooter/constants", "server/event"], function(lang, 
 
     User.prototype.time_request = function(data){
         data.s_time = new Date().getTime();
-        socket.emit('time', data);
+        this.socket.emit('time', data);
     }
 
-    /*  
+    /*
+     * User input callback.
      * Creates the event which will create player object.
      * Sets the callback which will be called when object is created.
      * Creates listener to the place where player will spawn.
@@ -51,10 +53,9 @@ define(["dojo/_base/lang", "shooter/constants", "server/event"], function(lang, 
      */
 
     User.prototype.spawn = function(pos){
-        lang.hitch(this, this.spawned);
-        var e = new Event(pos, [C.EVENT_SPAWN, C.EVENT_DELAY, pos],  this.spawned);
+        var e = new Event(pos, [C.EVENT_SPAWN, C.EVENT_DELAY, objects.next_id(), pos.x, pos.y, C.TYPE_HUMAN],  this.spawned.bind(this));
 
-        this.listener = new Listener(pos);
+        this.listener = new Listener(vector(pos.x, pos.y), this.socket);
     }
 
     /*  
@@ -64,6 +65,17 @@ define(["dojo/_base/lang", "shooter/constants", "server/event"], function(lang, 
 
     User.prototype.spawned = function(object){
         this.object = object;
+    }
+
+    /*
+     * User input callback.
+     *
+     */
+    
+    User.prototype.move = function(move){
+        if(this.object){
+            this.object.modules[C.ROLE_MOVE].set_move(vector(move.x, move.y).unit());
+        }
     }
 
     return User;

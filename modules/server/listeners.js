@@ -5,10 +5,11 @@
 
 define(["shooter/constants", "shooter/vector", "dojo/_base/array", "shooter/utils"], function(C, vector, arrayUtil, utils) {
     /*
-     *  Create new tree node.
-     *  Because of overlapping deepest level, have to add (size at deepest level /4) 
-     *  to every area before that. 
-     */
+    *  Create new tree node.
+    *  Because of overlapping deepest level, have to add (size at deepest level /4) 
+    *  to every area before that.
+    *  This class is not visible outside this module.
+    */
     function Node(x, y, s, level){
         this.x = x;
         this.y = y;
@@ -24,19 +25,20 @@ define(["shooter/constants", "shooter/vector", "dojo/_base/array", "shooter/util
     }
 
     /*
-     *  Split the node. 2x2 grid until deepest level.
-     *  4x4 at the bottom. Size stays previous level /2 but 
-     *  coordinates are previous level /4 so nodes overlap.
-     */
+    *  Split the node. 2x2 grid until deepest level.
+    *  4x4 at the bottom. Size stays previous level /2 but 
+    *  coordinates are previous level /4 so nodes overlap.
+    */
 
     Node.prototype.split = function(){
         this.is_splited = true;
         var x = this.x, y = this.y, s = this.s, level = this.level;
-        
+
         var grid_s = 2;
-        if(level === C_LISTENERS_LEVEL_LIMIT-1){
+        if(level === C.LISTENERS_LEVEL_LIMIT-1){
             grid_s = 4;
         }
+        var array = this.array;
         for(var x_i = 0; x_i<grid_s; ++x_i){
             for(var y_i = 0; y_i<grid_s; ++y_i){
                 array.push(new Node(x+s-s*(grid_s-x_i)/grid_s, y+s-s*(grid_s-y_i)/grid_s, s/2, level+1));
@@ -45,13 +47,13 @@ define(["shooter/constants", "shooter/vector", "dojo/_base/array", "shooter/util
     }
 
     /*
-     *  Gets listeners at event pos and send event to those. 
-     *  This doesn't have to split. If there is no split then there is no listeners in area.
-     */
+    *  Gets listeners at event pos and send event to those. 
+    *  This doesn't have to split. If there is no split then there is no listeners in area.
+    */
 
     Node.prototype.send_event = function(e){
         if (utils.inside(this.area, e.pos)){
-            if(this.level == C.LISTENERS_LEVEL_LIMIT){
+            if(this.level === C.LISTENERS_LEVEL_LIMIT){
                 var array = this.array;
                 for(var i=0, len = array.length; i<len; i++){
                     array[i].send_event(e);
@@ -68,14 +70,20 @@ define(["shooter/constants", "shooter/vector", "dojo/_base/array", "shooter/util
     }
 
     /*
-     *  Gets the closest tile to pos at the deepest level. 
-     *  Splits if have to.
-     */
+    *  Gets the closest tile to pos at the deepest level. 
+    *  Splits if have to.
+    */
 
-    Node.prototype.closest_tile(pos){
+    Node.prototype.closest_tile = function(pos){
         if (this.level === C.LISTENERS_LEVEL_LIMIT){
             var x = this.x, y = this.y, s = this.s;
             var area = [x+s/4, y+s/4, x+s/4*3, y+s/4*3];
+            if (x===0){
+                area[0] = 0;
+            }
+            if (y===0){
+                area[1] = 0;
+            }
             if(utils.inside(area, pos)){
                 return this;
             }else{
@@ -97,22 +105,22 @@ define(["shooter/constants", "shooter/vector", "dojo/_base/array", "shooter/util
     }
 
     var root = new Node(0,0, C.WORLD_SIZE, 0);
-    
+
     var tile_size = C.LISTENERS_TILE_SIZE;
 
     /*
-     *  Send event to correct listeners.
-     *  Forwards event to root node.
-     */
+    *  Send event to correct listeners.
+    *  Forwards event to root node.
+    */
 
     function send_event(e){
         root.send_event(e);
     }
 
     /*
-     *  Get best maching tile for listener and add listener to that tile.
-     *  Set listener tile area so that listener knows when it should switch to next tile.
-     */
+    *  Get best maching tile for listener and add listener to that tile.
+    *  Set listener tile area so that listener knows when it should switch to next tile.
+    */
 
     function add_listener(listener){
         var tile = root.closest_tile(listener.pos);
@@ -124,9 +132,9 @@ define(["shooter/constants", "shooter/vector", "dojo/_base/array", "shooter/util
     }
 
     /*
-     *  Get best matching tile for listener and remove listener from that tile.
-     *  Note that you can't update listener position before this has been called.
-     */
+    *  Get best matching tile for listener and remove listener from that tile.
+    *  Note that you can't update listener position before this has been called.
+    */
 
     function remove_listener(listener){
         var tile = root.closest_tile(listener.pos);
@@ -134,7 +142,7 @@ define(["shooter/constants", "shooter/vector", "dojo/_base/array", "shooter/util
     }
 
     return {
-        send_event: add_event,
+        send_event: send_event,
         add_listener: add_listener,
         remove_listener: remove_listener
     }

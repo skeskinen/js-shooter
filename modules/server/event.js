@@ -2,7 +2,7 @@
  *  Server-side events. They execute and emit themselves.
  */
 
-define(["dojo/_base/lang", "shooter/constants", "server/listeners", "shooter/utils", "shooter/game"], function(lang, C, listeners, utils, game){
+define(["shooter/constants", "server/listeners", "shooter/utils", "shooter/game"], function(C, listeners, utils, game){
 
     /*
      *  Creates new event, transmits it to the listeners and executes when time.
@@ -28,16 +28,18 @@ define(["dojo/_base/lang", "shooter/constants", "server/listeners", "shooter/uti
      */
 
     Event.prototype.set_execution = function(){
-        var time_left = this.data[1] - new Date().getTime();
+        var data = this.data
+        var time_left = data[1] - new Date().getTime();
         function execute(){
-            return game.event(this.data);
+            return game.event(data);
         }
-        lang.hitch(this, execute);
         
-        if(callback){
-            execute = utils.enchant(execute, callback);
+        if(this.callback){
+            execute = utils.enchant(execute, this.callback);
         }
         setTimeout(execute, time_left);
     }
+    
+    return Event;
 
 })

@@ -1,135 +1,215 @@
-define(["shooter/object", "shooter/constants", "shooter/utils"], function(object, C, utils){
-    index = {}
-    root = {s:0, level:0, x_min:0, x_mid:C.WORLD_SIZE/2, x_max:C.WORLD_SIZE, y_min:0, y_mid: C.WORLD_SIZE/2, y_max:C.WORLD_SIZE, childs:false, leaf_array:[]}
+define(["shooter/constants", "shooter/utils"], function(C, utils){
+    /*
+     *  Quadtree node constructor. This class is not visible outside this module.
+     *  Quadtree is used to store objects in a way that we can easily what all
+     *  objects in certain area.
+     */
+    function Node(x, y, s, level){
+        this.x = x;
+        this.y = y;
+        this.s = s;
+        this.level = level;
+        this.area = [x, y, x+s, y+s];
+        this.is_splitted = false;
+        this.count = 0;
+        this.array = [];
+    }
 
-    function _split(node){
-        node.childs = true;
-        var child_array = node.child_array = [];
+    /*
+     *  Quadrtree split. 
+     */
+
+    Node.prototype.split = function(){
+        this.is_splited = true;
+        var x = this.x, y = this.y, s = this.s, level = this.level;
         
-        for(var i=0; i<4; ++i){
-            var child_node = {
-                s:0,
-                level: node.level+1,
-                childs: false,
-                leaf_array: [],
-                parent: node
-            };
-            if (i==0 || i==2){
-                child_node.x_min = node.x_min;
-                child_node.x_max = node.x_mid;
-            }else{
-                child_node.x_min = node.x_mid;
-                child_node.x_max = node.x_max;
-            }
-            if(i<2){
-                child_node.y_min = node.y_min;
-                child_node.y_max = node.y_mid;
-            }else{
-                child_node.y_min = node.y_mid;
-                child_node.y_max = node.y_max;
-            }
-            child_node.x_mid = (child_node.x_min + child_node.x_max) /2;
-            child_node.y_mid = (child_node.y_min + child_node.y_max) /2;
-            child_array.push(child_node);
-        }
-        var leaf_array = node.leaf_array;
-        for(var i=0, len = leaf_array.length; i<len; ++i){
-            var o = leaf_array[i];
-            var pos = o.pos;
-            var child = child_array[0+(pos.x>node.x_mid?1:0)+(pos.y>node.y_mid?2:0)]
-            child.leaf_array.push(o);
-            ++child.s;            
-        }
-        delete node.leaf_array;
-    }
-    
-    function add(o){
-        o = object(o);
-        index[o.id] = o;
+        var leafs = this.array;
+        this.array = [];
 
-        var node = root;
-        var pos = o.pos;
-        while(node.childs){
-            ++node.s
-            node = node.child_array[0+(pos.x>node.x_mid?1:0)+(pos.y>node.y_mid?2:0)];
-        }
-        ++node.s
-        node.leaf_array.push(o);
-        if(node.s > C.OBJECTS_LEAF_LIMIT && node.level <= C.OBJECTS_LEVEL_LIMIT){
-            _split(node);
-        }
-        return o;
-    }
-    
-    function remove(id){
-        var o = index[id]
-        if (o){
-            delete index[id];
-            var node = root;
-            var pos = o.pos;
-            while(node.childs){
-                --node.s
-                node = node.child_array[0+(pos.x>node.x_mid?1:0)+(pos.y>node.y_mid?2:0)];
-            }
-            --node.s
-            var array = node.leaf_array
-            for(var i=0, len = array.length; i<len; ++i){
-                if(array[i] === o){
-                    array.splice(i,1);
-                    break;
+        for(var x_i = 0; x_i<2; ++x_i){
+            for(var y_i = 0; y_i<2; ++y_i){
+                var new_node = new Node(x + s*x_i/2, y + s*y_i/2, s/2, level+1);
+                array.push(new_node);
+                for(var i=0, len = leafs.length; i<len; ++i){
+                    new_node.add(leafs[i]);
                 }
             }
-            while(node.parent && node.parent.s <= C.OBJECTS_LEAF_LIMIT){
-                node = node.parent;
-                var leaf_array = node.leaf_array = [];
-                var child_array = node.child_array;
+        }
+    }
+
+    /*
+     *  Function that adds new object to quadtree.
+     *  If node has too many leafs it is split into 4 smaller nodes unless node 
+     *  is too deep in the tree.
+     */
+
+    Node.prototype.add = function(object){
+        if(utils.inside(this.area, object.pos)){
+            ++this.count;
+            var array = this.array;
+            if(this.is_splitted){
                 for(var i=0; i<4; ++i){
-                    var child_leafs = child_array[i].leaf_array;
-                    for(var p=0, len=child_leafs.length; p<len; ++p){
-                        left_array.push(child_leafs[p]);
+                    array[i].add(object);
+                }
+            }else{
+                array.push(object);
+                object.objects_area = this.area;
+                if(this.count > C.OBJECTS_LEAF_LIMIT && this.level < C.OBJECTS_LEVEL_LIMIT){
+                    this.split();
+                }
+            }
+        }
+    }
+
+    /*
+     *  Function that removes object from quadtree.
+     *  If there is too few objects left in subtree frow which object was removed,
+     *  it is shrinked.
+     */
+
+    Node.prototype.remove = function(object){
+        if(utils.inside(this.area, object.pos)){
+            --this.count;
+            if(this.is_splitted){
+                for(var i=0; i<4; ++i){
+                    array[i].remove(object);
+                }
+                if(this.level !== 0 && this.count < C.OBJECTS_LEAF_LIMIT /4){
+                    this.shrink();
+                }
+            }else{
+                var length_before = this.array.length;
+                this.array = utils.without(this.array, object);
+                if(this.array.length === length_before){
+                    console.log("Could not remove object from quadtree. Need to do remove before update.");
+                }
+            }
+        }
+    }
+    
+    /*
+     *  Combines lower level nodes into this node.
+     *  Called if there is too few leafs in this subtree.
+     */
+
+    Node.prototype.shrink = function(){
+        this.is_splitted = false;
+        var childs = this.array;
+        var array = this.array = [];
+        for(var i=0; i<4; ++i){
+            var childs_nodes = childs[i].array;
+            for(var p=0, len = childs_nodes.length; p<len; ++p){
+                array.push(childs_nodes[p]);
+            }
+        }
+    }
+    
+    /*
+     *  Calls function f for every object in area.
+     */
+
+    Node.prototype.area_get = function(area, f){
+        if(utils.overlap(this.area, area)){
+            var array = this.array;
+            if(this.is_splitted){
+                for(var i=0; i<4; ++i){
+                    array[i].area_get(area, f);
+                }
+            }else{
+                for(var i=0, len=array.length; i<len; ++i){
+                    if(utils.inside(this.area, array[i].pos)){
+                        f(array[i]);
                     }
                 }
-                delete node.child_array;
-                node.childs = false;
             }
         }
     }
+    
+    var root = new Node(0,0, C.WORLD_SIZE, 0);
+    var index = {};
+
+    /*
+     *  Adds object to index and quadtree.  
+     */
+
+    function add_object(object){
+        index[object.id] = object;
+        root.add(object);
+    };
+
+    /*
+     *  Remove object by id. Removes from index and quadtree.
+     */
+
+    function remove(id){
+        var object = index[id];
+        delete index[id];
+        root.remove(object);
+    }
+    
+    /*
+     *  Remove object by object reference. Removes from index and quadtree.
+     */
+
+    function remove_object(object){
+        delete index[object.id];
+        root.remove(object);
+    }
+
+    /*
+     *  Add object to quadtree. Useful when moving object.
+     */
+
+    function tree_add(object){
+        root.add(object);
+    }
+
+    /*
+     *  Remove object from quadtree. Useful when moving object.
+     */
+
+    function tree_remove(object){
+        root.remove(object);
+    }
+
+    /*
+     *  Returns object with given id from the object hash table.
+     */
 
     function get(id){
         return index[id];
     }
-
-    var overlap = utils.overlap;
-
-    function _get_objects(node, area, f){
-        if (overlap(area, {x1: node.x_min, y1: node.y_min, x2: node.x_max, y2: node.y_max})){
-            if (node.childs){
-                for(var i=0; i<4; i++){
-                    get_objects(node.child_array[i], area, f);
-                }
-            }else{
-                var leaf_array = node.leaf_array
-                for(var i=0, len = leaf_array.length; i<len; ++i){
-                    var x1 = area.x1, y1 = area.y1, x2 = area.x2, y2 = area.y2;
-                    var object = leaf_array[i];
-                    var pos = object.pos;
-                    if(pos.x >= x1 && pos.x <= x2 && pos.y >= y1 && pos.y <= y2){
-                        f(object)
-                    }
-                }
-            }
-        }
-    }
     
+    /*
+     *  Calls function f for every object in area.
+     */
+
     function area_get(area, f){
-        _get_objects(root, area, f);
+        root.area_get(area,f);
+    }
+
+    var id_counter = 0;
+
+    /*
+     *  Returns next free object id. This will be called from the place 
+     *  that creates the event that will create the object.
+     *  The event has to know the id so that it can be transmitted to clients.
+     */
+
+    function next_id(){
+        return ++id_counter;
     }
 
     return {
-        add: add,
+        add_object: add_object,
         remove: remove,
+        remove_object: remove_object,
+        tree_add: tree_add,
+        tree_remove: tree_remove,
         get: get,
         area_get: area_get,
-    };
+        next_id: next_id
+    }
+
 });
 

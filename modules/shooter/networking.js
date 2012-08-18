@@ -13,7 +13,7 @@ define(["shooter/maps", "shooter/vector", "shooter/utils", "shooter/game", "shoo
                     setTimeout(time_request, i*5000);
                 }
                 socket.emit('auth', {guest:true});
-                var tmp_start_pos = vector({x: 145.73387946666668, y: 74.09939904641982});
+                var tmp_start_pos = vector();
                 socket.emit('spawn', tmp_start_pos);
             });
 
