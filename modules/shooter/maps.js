@@ -1,9 +1,12 @@
 define(["shooter/vector", "dojo/dom", "shooter/constants", "dojo/domReady!"], function(vector, dom, C){
-    var main_map_styles = [ 
-        { featureType: "transit", elementType: "labels", stylers: [ { visibility: "off" } ] },
-        { featureType: "poi", elementType: "labels", stylers: [ { visibility: "off" } ] },
-        { featureType: "road", elementType: "labels", stylers: [ { visibility: "off" } ] } 
-    ];
+    var main_map_styles =[ 
+        { elementType: "labels", stylers: [ { visibility: "off" } ] },
+        { elementType: "geometry", stylers: [ { gamma: 0.10 } ] },
+        { featureType: "road.local", stylers: [ { lightness: -50 } ] },
+        { featureType: "transit", stylers: [ { visibility: "off" } ] },
+        { featureType: "administrative", stylers: [ { visibility: "off" } ] } 
+    ]
+
 
     var terrain_map_styles = [
         { stylers: [ { visibility: "off" } ] },
@@ -41,7 +44,7 @@ define(["shooter/vector", "dojo/dom", "shooter/constants", "dojo/domReady!"], fu
         styles: terrain_map_styles
     };
 
-    var origin = vector({x:C.WORLD_SIZE/2, y: C.WORLD_SIZE/2});
+    var origin = vector(C.WORLD_SIZE/2, C.WORLD_SIZE/2);
     var px_per_deg = C.WORLD_SIZE /360;
     var px_per_rad = C.WORLD_SIZE / (2 * Math.PI);
     
@@ -54,21 +57,25 @@ define(["shooter/vector", "dojo/dom", "shooter/constants", "dojo/domReady!"], fu
     }
 
     function to_world_coord(latLng) {
+        console.log(latLng);
         var coord = vector();
-        coord.x = origin.x + latLng.lng() * px_per_deg;
+        coord.x = Math.floor(origin.x + latLng.lng() * px_per_deg);
 
         var siny = Math.sin(latLng.lat() / 180 * Math.PI);
-        coord.y = origin.y + 0.5 * Math.log((1 + siny) / (1 - siny)) * -px_per_rad;
+        coord.y = Math.floor(origin.y + 0.5 * Math.log((1 + siny) / (1 - siny)) * -px_per_rad);
         return coord;
     };
 
-    main_map = new google.maps.Map(dom.byId('main_map'), main_map_options);
-    var terrain_map = new google.maps.Map(dom.byId('terrain_map'), terrain_map_options);
+    //var main_map = new google.maps.Map(dom.byId('main_map'), main_map_options);
+    //var terrain_map = new google.maps.Map(dom.byId('terrain_map'), terrain_map_options);
 
     return {
         set_center: function(v) {
             main_map.setCenter(to_LatLng(v));
             terrain_map.setCenter(to_LatLng(v));
+        },
+        get_center: function(){
+            return to_world_coord(main_map.getCenter());
         },
         to_LatLng: to_LatLng,
         to_world_coord: to_world_coord,

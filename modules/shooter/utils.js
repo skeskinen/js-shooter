@@ -58,11 +58,11 @@ define(["dojo/_base/array"], function(arrayUtil){
     }
 
     /*
-    *  Returns current server time approximation. On server exuals Date().getTime(). 
+    *  Returns current server time approximation. On server equals Date.now(). 
     */
 
     function time(){
-        return new Date().getTime() + time_offset;
+        return Date.now() + time_offset;
     }
 
     /*  
@@ -71,8 +71,8 @@ define(["dojo/_base/array"], function(arrayUtil){
     */
 
     function new_time_result(data){
-        var latency = (new Date().getTime() - data.c_time) / 2;
-        var offset = data.s_time - new Date().getTime();
+        var latency = (Date.now() - data.c_time) / 2;
+        var offset = data.s_time - Date.now();
         time_results.push({latency: latency, offset: offset});
         _choose_time_offset();
     }

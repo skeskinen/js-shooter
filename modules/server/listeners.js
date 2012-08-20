@@ -31,7 +31,7 @@ define(["shooter/constants", "shooter/vector", "dojo/_base/array", "shooter/util
     */
 
     Node.prototype.split = function(){
-        this.is_splited = true;
+        this.is_splitted = true;
         var x = this.x, y = this.y, s = this.s, level = this.level;
 
         var grid_s = 2;
@@ -56,13 +56,13 @@ define(["shooter/constants", "shooter/vector", "dojo/_base/array", "shooter/util
             if(this.level === C.LISTENERS_LEVEL_LIMIT){
                 var array = this.array;
                 for(var i=0, len = array.length; i<len; i++){
-                    array[i].send_event(e);
+                    array[i].socket.send_event(e);
                 }
             }else{
-                if(this.split){
+                if(this.is_splitted){
                     var array = this.array;
                     for(var i=0, len = array.length; i<len; ++i){
-                        array[i].socket.send_event(e);
+                        array[i].send_event(e);
                     }
                 }
             }

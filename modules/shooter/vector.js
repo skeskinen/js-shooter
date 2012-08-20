@@ -1,7 +1,7 @@
 define(function(){
     Vector = function(x,y) {
         this.x = x || 0;
-        this.y = x || 0;
+        this.y = y || 0;
     }
 
     Vector.prototype.add = function(v){
@@ -26,10 +26,10 @@ define(function(){
 
     Vector.prototype.unit = function(){
         var len = this.len();
-        if (len == 0) {
-            return Vector(0,0);
+        if (len === 0) {
+            return new Vector(0,0);
         }
-        return Vector(this.x / len, this.y / len);
+        return new Vector(this.x / len, this.y / len);
     }
 
     Vector.prototype.toString = function(){
@@ -43,7 +43,7 @@ define(function(){
     Vector.prototype.rotate = function(angle, origin){
         var x = origin.x + ((this.x - origin.x) * Math.cos(angle)) - ((origin.y - this.y) * Math.sin(angle));
         var y = origin.y + ((origin.y - this.y) * Math.cos(angle)) - ((this.x - origin.x) * Math.sin(angle));
-        return Vector(x,y);
+        return new Vector(x,y);
     }
 
 

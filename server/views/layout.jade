@@ -1,10 +1,12 @@
 doctype 5
 html
   head
-    meta(name='vieport', content='initial-scale=1.0, user-scalable=no')
+    meta(name='vieport', content='width=device-width, initial-scale=1.0, user-scalable=no')
     title= title
-    link(rel='stylesheet', href='/stylesheets/style.css')
+    link(rel='stylesheet', href='/css/style.css')
     script(src='http://maps.googleapis.com/maps/api/js?key=AIzaSyB9Stvt5r1OkWMx4W7-t2zx_BBWqS9Ivh0&sensor=false')
+    script(src='js/three.js')
+    script(src='js/stats.js')
     script(src="/socket.io/socket.io.js")
     script(type='text/javascript')
       dojoConfig = {

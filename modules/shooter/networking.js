@@ -5,7 +5,7 @@ define(["shooter/maps", "shooter/vector", "shooter/utils", "shooter/game", "shoo
             socket = io.connect();
             var first_time_diff;
             function time_request(){
-                socket.emit('time', {c_time:new Date().getTime()});
+                socket.emit('time', {c_time:Date.now()});
             }
             socket.on('connect', function(){
                 
@@ -13,7 +13,7 @@ define(["shooter/maps", "shooter/vector", "shooter/utils", "shooter/game", "shoo
                     setTimeout(time_request, i*5000);
                 }
                 socket.emit('auth', {guest:true});
-                var tmp_start_pos = vector();
+                var tmp_start_pos = vector(38203262, 19424896);
                 socket.emit('spawn', tmp_start_pos);
             });
 
@@ -21,18 +21,19 @@ define(["shooter/maps", "shooter/vector", "shooter/utils", "shooter/game", "shoo
                 utils.new_time_result(data);
             });
 
-            socket.on('events', function(data){
-                for(var i=0, len = data.length; i < len; ++i){
-                    game.add_event(data[i]);
+            socket.on('event', function(data){
+                function execute_event(){
+                    game.event(data);
                 }
+                setTimeout(execute_event, data[1] - utils.time());
             });
 
             socket.on('player', function(id){
-               game.player_id = id; 
+               game.set_player(id); 
             });
         },
         send_move: function(move){
-            socket.emit('move', {time: utils.time() + C.EVENT_DELAY, move:move});
+            socket.emit('move', [utils.time() + C.EVENT_DELAY, move.x, move.y]);
         }
     }
 });

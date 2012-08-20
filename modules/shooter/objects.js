@@ -20,18 +20,18 @@ define(["shooter/constants", "shooter/utils"], function(C, utils){
      */
 
     Node.prototype.split = function(){
-        this.is_splited = true;
+        this.is_splitted = true;
         var x = this.x, y = this.y, s = this.s, level = this.level;
         
         var leafs = this.array;
-        this.array = [];
+        var array = this.array = [];
 
         for(var x_i = 0; x_i<2; ++x_i){
             for(var y_i = 0; y_i<2; ++y_i){
                 var new_node = new Node(x + s*x_i/2, y + s*y_i/2, s/2, level+1);
                 array.push(new_node);
                 for(var i=0, len = leafs.length; i<len; ++i){
-                    new_node.add(leafs[i]);
+                    console.log('index', i);
                 }
             }
         }
@@ -70,6 +70,7 @@ define(["shooter/constants", "shooter/utils"], function(C, utils){
     Node.prototype.remove = function(object){
         if(utils.inside(this.area, object.pos)){
             --this.count;
+            var array = this.array;
             if(this.is_splitted){
                 for(var i=0; i<4; ++i){
                     array[i].remove(object);

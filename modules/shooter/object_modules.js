@@ -10,6 +10,7 @@ define(["shooter/constants", "shooter/vector", "shooter/utils", "shooter/objects
     
     var client_modules = {};
     client_modules[C.TYPE_HUMAN] = [[C.ROLE_MOVE, 'move'], [C.ROLE_DRAW,'draw']];
+    client_modules[C.TYPE_PLAYER] = [[C.ROLE_MOVE, 'move'], [C.ROLE_DRAW,'draw']];
 
     /*
      * Return list of default modules.
@@ -36,7 +37,7 @@ define(["shooter/constants", "shooter/vector", "shooter/utils", "shooter/objects
     function move(){
         function Move(object){
             this.object = object;
-            this.move_dir = vector();
+            this.dir = vector();
             this.speed = 80 /1000;
             this.last_update = 0;
             this.scheduled_update_set = false;
@@ -50,12 +51,13 @@ define(["shooter/constants", "shooter/vector", "shooter/utils", "shooter/objects
 
         Move.prototype.update = function(){
             var cur_time = utils.time();
-            var move_dir = this.move_dir;
-            if((move_dir.x !== 0) || (move_dir.y !== 0)){
+            var dir = this.dir;
+            if((dir.x !== 0) || (dir.y !== 0)){
                 var dt = cur_time - this.last_update;
-                var move_distance = speed * dt;
-                object.pos = vector(Math.floor(object.pos.x + move_dir.x * move_distance), 
-                    Math.floor(object.pos.y + move_dir.y * move_distance));
+                var move_distance = this.speed * dt;
+                var pos = this.object.pos;
+                this.object.pos = vector(Math.floor(pos.x + dir.x * move_distance), 
+                    Math.floor(pos.y + dir.y * move_distance));
             }
             this.last_update = cur_time;
         }
@@ -66,9 +68,9 @@ define(["shooter/constants", "shooter/vector", "shooter/utils", "shooter/objects
          *  Finally sets scheduled update. If movement = 0 there will be no scheduled update.
          */
 
-        Move.prototype.set_move = function(move_dir){
+        Move.prototype.set_move = function(dir){
             this.update();
-            this.move_dir = move_dir;
+            this.dir = dir;
             this.set_scheduled_update();
         }
         
@@ -83,23 +85,25 @@ define(["shooter/constants", "shooter/vector", "shooter/utils", "shooter/objects
                 clearTimeout(this.scheduled_update_handle);
                 this.scheduled_update_set = false;
             }
-            if((move_dir.x === 0) && (move_dir.y === 0)){
+            var dir = this.dir
+            if((dir.x === 0) && (dir.y === 0)){
                 return;
             }
             var time = 9999999999;
             var area = this.object.objects_area;
             var pos = this.object.pos;
+            var speed = this.speed;
           
-            if(this.move_dir.x < 0){
+            if(dir.x < 0){
                 time = Math.min(time, Math.ceil((pos.x - area[0])/speed));
             }
-            if(this.move_dir.x > 0){
+            if(dir.x > 0){
                 time = Math.min(time, Math.ceil((area[2] - pos.x)/speed));
             }
-            if(this.move_dir.y < 0){
+            if(dir.y < 0){
                 time = Math.min(time, Math.ceil((pos.y - area[1])/speed));
             }
-            if(this.move_dir.y > 0){
+            if(dir.y > 0){
                 time = Math.min(time, Math.ceil((area[3] - pos.y)/speed));
             }
 
@@ -115,7 +119,7 @@ define(["shooter/constants", "shooter/vector", "shooter/utils", "shooter/objects
         Move.prototype.scheduled_update = function(){
             objects.tree_remove(this.object);
             this.update();
-            object.tree_add(this.object);
+            objects.tree_add(this.object);
             this.set_scheduled_update();
         }
 
@@ -132,7 +136,12 @@ define(["shooter/constants", "shooter/vector", "shooter/utils", "shooter/objects
             if(me.roles[C.ROLE_MOVE]){
                 me.modules[C.ROLE_MOVE].update();
             }
-            context.fillRect(me.pos.x-5, me.pos.y-5, 10, 10);
+            if(me.type == C.TYPE_PLAYER){
+                context.fillStyle = 'blue';
+            }else{
+                context.fillStyle = 'black';
+            }
+            context.fillRect(me.pos.x-10, me.pos.y-10, 20, 20);
         }
     }
 

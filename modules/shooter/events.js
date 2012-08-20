@@ -1,12 +1,7 @@
-define(["shooter/networking", "shooter/vector", "shooter/maps", "dojo/dom", "dojo/on", "dojo/keys", "dojo/domReady!"], function(networking, vector, maps, dom, on, keys){
+define(["shooter/networking", "shooter/vector", "shooter/maps", "shooter/rendering", "dojo/dom", "dojo/on", "dojo/keys", "dojo/domReady!"], function(networking, vector, maps, rendering, dom, on, keys){
     var is_down = new Array();
 
     var draw_canvas = dom.byId('draw_canvas');
-    function resize_draw_canvas(){
-        draw_canvas.width = draw_canvas.offsetWidth;
-        draw_canvas.height = draw_canvas.offsetHeight;
-    }
-    resize_draw_canvas();
 
     function get_mouse_angle(){
         var center = vector(map_w/2,map_h/2);
@@ -30,97 +25,97 @@ define(["shooter/networking", "shooter/vector", "shooter/maps", "dojo/dom", "doj
             x +=1;
         }
         if(is_down['w']) {
-            y +=1;
-        }
-        if(is_down['s']){
             y -=1;
         }
-        return vector({x:x,y:y});
+        if(is_down['s']){
+            y +=1;
+        }
+        return vector(x, y);
     }
 
     return {
         bind: function(){
-                on(window, "keydown", function(event){
-                    switch(event.which){
-                        case 65:
-                            is_down['a'] = true;
-                            networking.send_move(get_move());
-                            break;
-                        case 87:
+            on(window, "keydown", function(event){
+                switch(event.which){
+                    case 65:
+                        is_down['a'] = true;
+                        networking.send_move(get_move());
+                        break;
+                    case 87:
 
-                        case 188:
-                            is_down['w'] = true;
-                            networking.send_move(get_move());
-                            break;
+                    case 188:
+                        is_down['w'] = true;
+                        networking.send_move(get_move());
+                        break;
 
-                        case 68:
+                    case 68:
 
-                        case 69:
-                            is_down['d'] = true;
-                            networking.send_move(get_move());
-                            break;
+                    case 69:
+                        is_down['d'] = true;
+                        networking.send_move(get_move());
+                        break;
 
-                        case 83:
+                    case 83:
 
-                        case 79:
-                            is_down['s'] = true;
-                            networking.send_move(get_move());
-                            break;
-                    }
-                });
+                    case 79:
+                        is_down['s'] = true;
+                        networking.send_move(get_move());
+                        break;
+                }
+            });
 
-                on(document, "keyup", function(event){
-                    switch(event.which){
-                        case 65:
-                            is_down['a'] = false;
-                            networking.send_move(get_move());
-                            break;
-                        case 87:
+            on(document, "keyup", function(event){
+                switch(event.which){
+                    case 65:
+                        is_down['a'] = false;
+                        networking.send_move(get_move());
+                        break;
+                    case 87:
 
-                        case 188:
-                            is_down['w'] = false;
-                            networking.send_move(get_move());
-                            break;
-                        case 68:
+                    case 188:
+                        is_down['w'] = false;
+                        networking.send_move(get_move());
+                        break;
+                    case 68:
 
-                        case 69:
-                            is_down['d'] = false;
-                            networking.send_move(get_move());
-                            break;
-                        case 83:
+                    case 69:
+                        is_down['d'] = false;
+                        networking.send_move(get_move());
+                        break;
+                    case 83:
 
-                        case 79:
-                            is_down['s'] = false;
-                            networking.send_move(get_move());
-                            break;
-                    }
-                });
-                on(window, "resize", function(){
-                    resize_draw_canvas();
-                });
-/*
-                $(document).mousedown(function(event){
-                    is_down['mouse'] = true;
-                    mouse_x = event.pageX;
-                    mouse_y = event.pageY;
+                    case 79:
+                        is_down['s'] = false;
+                        networking.send_move(get_move());
+                        break;
+                }
+            });
+            on(window, "resize", function(){
+                rendering.resize();
+            });
+            /*
+            $(document).mousedown(function(event){
+            is_down['mouse'] = true;
+            mouse_x = event.pageX;
+            mouse_y = event.pageY;
 
-                    networking.send_mouse_angle(get_mouse_angle());
-                    networking.send_shooting(true);
-                });
-                
-                $(document).mouseup(function(event){
-                    is_down['mouse'] = false;
-                    networking.send_shooting(false);
-                });
+            networking.send_mouse_angle(get_mouse_angle());
+            networking.send_shooting(true);
+            });
 
-                maps.bind_mouse_listener();
-*/
-                /*
+            $(document).mouseup(function(event){
+            is_down['mouse'] = false;
+            networking.send_shooting(false);
+            });
 
-                player.recalc_pixels_ = true;
-                player.draw();
-                });
-                */
+            maps.bind_mouse_listener();
+            */
+            /*
+
+            player.recalc_pixels_ = true;
+            player.draw();
+            });
+            */
         }
     }
 });

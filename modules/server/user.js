@@ -9,6 +9,7 @@ define(["shooter/constants", "shooter/vector", "shooter/objects", "server/event"
     var User = function(socket){
         this.name = 'guest' + (++guest_id);
         this.socket = socket;
+        this.object = false;
 
         this.bind_socket();
     }
@@ -39,7 +40,7 @@ define(["shooter/constants", "shooter/vector", "shooter/objects", "server/event"
      */
 
     User.prototype.time_request = function(data){
-        data.s_time = new Date().getTime();
+        data.s_time = Date.now();
         this.socket.emit('time', data);
     }
 
@@ -53,9 +54,12 @@ define(["shooter/constants", "shooter/vector", "shooter/objects", "server/event"
      */
 
     User.prototype.spawn = function(pos){
-        var e = new Event(pos, [C.EVENT_SPAWN, C.EVENT_DELAY, objects.next_id(), pos.x, pos.y, C.TYPE_HUMAN],  this.spawned.bind(this));
-
         this.listener = new Listener(vector(pos.x, pos.y), this.socket);
+        
+        var player_id = objects.next_id();
+        var e = new Event(pos, [C.EVENT_SPAWN, Date.now() + C.EVENT_DELAY, player_id, pos.x, pos.y, C.TYPE_HUMAN],  this.spawned.bind(this));
+        
+        this.socket.emit('player', player_id);
     }
 
     /*  
@@ -72,9 +76,11 @@ define(["shooter/constants", "shooter/vector", "shooter/objects", "server/event"
      *
      */
     
-    User.prototype.move = function(move){
+    User.prototype.move = function(data){
         if(this.object){
-            this.object.modules[C.ROLE_MOVE].set_move(vector(move.x, move.y).unit());
+            var move_dir = vector(data[1], data[2])
+            move_dir = move_dir.unit();
+            var e = new Event(this.object.pos, [C.EVENT_MOVE, Math.max(data[0], C.EVENT_MIN_DELAY), this.object.id, move_dir.x, move_dir.y]);
         }
     }
 
